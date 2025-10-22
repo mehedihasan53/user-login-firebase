@@ -1,11 +1,11 @@
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  updateProfile,
 } from "firebase/auth";
 import React, { useState } from "react";
 import { auth } from "../../firebase/firebase.init";
-import { FaEye } from "react-icons/fa";
-import { FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link } from "react-router";
 
 const Register = () => {
@@ -15,23 +15,19 @@ const Register = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const name = e.target.name.value;
+    const photoURL = e.target.photoURL.value;
     const email = e.target.email.value;
     const password = e.target.password.value;
     const terms = e.target.terms.checked;
-    console.log(email, password, terms);
 
-    const passwordRegex =
-      /(?=.*[a-z])(?=.*[A-Z]).{6,}/
-
+    const passwordRegex = /(?=.*[a-z])(?=.*[A-Z]).{6,}/;
 
     if (!passwordRegex.test(password)) {
-      setError(
-        "Password must be at least 6 characters long and include uppercase, lowercase, a number, and a special character."
-      );
+      setError("Password must have at least 6 chars, with upper & lowercase.");
       return;
     }
 
-    //rest error
     setError("");
     setSuccess(false);
 
@@ -42,43 +38,78 @@ const Register = () => {
 
     createUserWithEmailAndPassword(auth, email, password)
       .then((result) => {
-        console.log(result.user);
-        setSuccess(true);
+        const user = result.user;
+        console.log("User created:", user);
 
-        sendEmailVerification(result.user)
+        // ✅ Update user profile with name and photo
+        updateProfile(user, {
+          displayName: name,
+          photoURL: photoURL,
+        })
           .then(() => {
-            alert("Verification Email Sent");
+            console.log("Profile updated with name & photo");
           })
-          .catch((error) => {
-            console.log(error.message);
-          });
+          .catch((error) => console.log(error.message));
+
+        // ✅ Send verification email
+        sendEmailVerification(user)
+          .then(() => {
+            alert("Verification email sent! Please check your inbox.");
+          })
+          .catch((error) => console.log(error.message));
+
+        setSuccess(true);
       })
       .catch((error) => {
         console.log(error.message);
         setError(error.message);
-        // alert(error.message);
       });
   };
+
   const handleTogglePasswordShow = (e) => {
     e.preventDefault();
     setShowPassword(!showPassword);
   };
+
   return (
     <div className="hero bg-base-200 min-h-screen">
       <div className="hero-content flex-col lg:flex-row-reverse">
         <div className="text-center lg:text-left"></div>
         <div className="card bg-base-100 w-full max-w-sm shrink-0 shadow-2xl">
           <div className="card-body">
-            <h1 className="text-5xl font-bold"> Register now!</h1>
+            <h1 className="text-4xl font-bold mb-2">Register Now!</h1>
             <form onSubmit={handleSubmit}>
-              <fieldset className="fieldset">
+              <fieldset className="fieldset space-y-2">
+                {/* Name */}
+                <label className="label">Name</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Your Name"
+                  name="name"
+                  required
+                />
+
+                {/* Photo URL */}
+                <label className="label">Photo URL</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Your Photo URL"
+                  name="photoURL"
+                />
+
+                {/* Email */}
                 <label className="label">Email</label>
                 <input
                   type="email"
                   className="input"
                   placeholder="Email"
                   name="email"
+                  required
                 />
+
+                {/* Password */}
                 <div className="relative">
                   <label className="label">Password</label>
                   <input
@@ -86,6 +117,7 @@ const Register = () => {
                     className="input"
                     placeholder="Password"
                     name="password"
+                    required
                   />
                   <button
                     onClick={handleTogglePasswordShow}
@@ -94,22 +126,32 @@ const Register = () => {
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
-                <div>
-                  <label class="label">
-                    <input type="checkbox" class="checkbox" name="terms" />
+
+                {/* Terms */}
+                <label className="label cursor-pointer">
+                  <input type="checkbox" className="checkbox" name="terms" />
+                  <span className="label-text ml-2">
                     Accept our terms & conditions
-                  </label>
-                </div>
-                <button className="btn btn-neutral mt-4">Register</button>
+                  </span>
+                </label>
+
+                <button className="btn btn-neutral mt-3 w-full">
+                  Register
+                </button>
               </fieldset>
+
+              {/* Messages */}
               {success && (
-                <p className="text-green-500">Account created successful</p>
+                <p className="text-green-600 mt-2">
+                  ✅ Account created successfully!
+                </p>
               )}
-              {error && <p className="text-red-500">{error}</p>}
+              {error && <p className="text-red-600 mt-2">{error}</p>}
             </form>
-            <p>
-              already have an account? please{" "}
-              <Link className="text-blue-500 underline" to={"/login"}>
+
+            <p className="mt-3">
+              Already have an account?{" "}
+              <Link className="text-blue-500 underline" to="/login">
                 Login
               </Link>
             </p>
